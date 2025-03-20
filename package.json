@@ -2,12 +2,12 @@
   "name": "doom-of-teyvat",
   "version": "0.1.0",
   "description": "A parody game combining Genshin Impact, Minecraft and DOOM",
+  "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "build": "webpack --config webpack.config.js",
-    "test": "jest"
+    "start": "webpack serve --mode=development",
+    "dev": "webpack serve --mode=development --open",
+    "build": "webpack --mode=production"
   },
   "keywords": [
     "game",
@@ -18,12 +18,17 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
-    "three": "^0.159.0",
-    "cannon-es": "^0.20.0"
+    "cannon-es": "^0.20.0",
+    "three": "^0.159.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
+    "@babel/core": "^7.26.10",
+    "@babel/preset-env": "^7.26.9",
+    "babel-loader": "^9.2.1",
+    "copy-webpack-plugin": "^11.0.0",
+    "html-webpack-plugin": "^5.6.3",
     "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.2"
   }
 }

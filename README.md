@@ -1,19 +1,22 @@
-# DOOM of Teyvat: The Blocky Adventure
+# DOOM of Teyvat
 
-A parody game that combines elements from Genshin Impact, Minecraft, and classic DOOM.
-
-## About
-DOOM of Teyvat is a first-person action-adventure game that combines the elemental combat and character-switching mechanics of Genshin Impact with Minecraft's voxel-based world-building and DOOM's fast-paced combat and retro aesthetic.
+A parody game combining elements from Genshin Impact, Minecraft, and DOOM.
 
 ## Features
-- Blocky, voxel-based recreation of Teyvat
-- First-person combat with elemental reactions
-- Build and break blocks in the environment
-- Procedurally generated domains
-- Elemental weapons inspired by DOOM's arsenal
+- First-person exploration in a voxel world
+- Minecraft-style block building and destruction
+- Genshin Impact-inspired elemental combat
+- DOOM-style weapons and combat
 
-## Development
-This game is currently in early development.
+## How to Run
+1. Clone the repository
+2. Run `npm install` to install dependencies
+3. Run `npm run dev` to start the development server
+4. Open your browser to http://localhost:8080
 
-## License
-This is a fan project for educational purposes only.
+## Controls
+- WASD: Move
+- Mouse: Look around
+- Space: Jump
+- Left Click: Mine/Attack
+- Right Click: Place blocks
