@@ -1,6 +1,7 @@
 // DOOM of Teyvat: Main Entry Point
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+import { SoundManager } from './engine/SoundManager.js';
 
 // Global variables
 let camera, scene, renderer, controls;
@@ -9,6 +10,8 @@ let moveBackward = false;
 let moveLeft = false;
 let moveRight = false;
 let canJump = false;
+let musicStarted = false;
+let soundManager; // Add this declaration
 
 let prevTime = performance.now();
 const velocity = new THREE.Vector3();
@@ -16,6 +19,12 @@ const direction = new THREE.Vector3();
 
 // Player height
 const playerHeight = 1.8;
+
+function initSoundManager() {
+  soundManager = new SoundManager();
+  soundManager.initialize();
+  return soundManager;
+}
 
 // Initialize the game
 function init() {
@@ -26,7 +35,7 @@ function init() {
   
   // Create camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, playerHeight, 0);
+  camera.position.set(0, playerHeight, 5); // Start 5 units back to see what's in front
   
   // Create renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -34,13 +43,33 @@ function init() {
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.shadowMap.enabled = true;
   document.getElementById('game-container').appendChild(renderer.domElement);
+
+  // Initialize sound manager
+  initSoundManager();
+  
+  // Initialize sound manager
+  soundManager = new SoundManager();
+  soundManager.initialize();
   
   // Create controls
   controls = new PointerLockControls(camera, document.body);
   
-  // Add click event to start game
+  // Add click event to start game and enable sound
   document.addEventListener('click', function() {
+    // Resume audio context if suspended (browser requirement for audio)
+    if (soundManager.audioContext && soundManager.audioContext.state === 'suspended') {
+      soundManager.audioContext.resume().then(() => {
+        console.log('AudioContext resumed');
+      });
+    }
+    
     controls.lock();
+    
+    // Play background music when game starts
+    if (controls.isLocked && !musicStarted) {
+      soundManager.playMusic('main');
+      musicStarted = true;
+    }
   });
   
   controls.addEventListener('lock', function() {
@@ -56,11 +85,11 @@ function init() {
   document.addEventListener('keyup', onKeyUp);
   
   // Create lighting
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Increase ambient light
   scene.add(ambientLight);
   
   const sunLight = new THREE.DirectionalLight(0xffffff, 1);
-  sunLight.position.set(50, 100, 50);
+  sunLight.position.set(10, 30, 10);
   sunLight.castShadow = true;
   scene.add(sunLight);
   
@@ -72,6 +101,24 @@ function init() {
   
   // Handle window resize
   window.addEventListener('resize', onWindowResize);
+  
+  // Log camera position to console
+  console.log("Camera position:", camera.position);
+  
+  // Add sound test button for debugging
+  const soundTestButton = document.createElement('button');
+  soundTestButton.textContent = 'Test Sound';
+  soundTestButton.style.position = 'absolute';
+  soundTestButton.style.top = '10px';
+  soundTestButton.style.right = '10px';
+  soundTestButton.style.zIndex = '1000';
+  soundTestButton.style.padding = '8px';
+  soundTestButton.style.cursor = 'pointer';
+  soundTestButton.addEventListener('click', () => {
+    soundManager.playSound('jump');
+    console.log('Playing test sound');
+  });
+  document.body.appendChild(soundTestButton);
 }
 
 function createGround() {
@@ -149,6 +196,7 @@ function onKeyDown(event) {
       if (canJump) {
         velocity.y += 10;
         canJump = false;
+        soundManager.playSound('jump'); // Play jump sound
       }
       break;
   }
