@@ -1,6 +1,6 @@
 {
   "name": "doom-of-teyvat",
-  "version": "0.1.0",
+  "version": "0.0.0-beta",
   "description": "A parody game combining Genshin Impact, Minecraft and DOOM",
   "type": "module",
   "main": "src/index.js",
