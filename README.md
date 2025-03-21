@@ -2,16 +2,16 @@
 
 A parody game combining elements from Genshin Impact, Minecraft, and DOOM. Experience first-person combat with elemental powers in a blocky, destructible world.
 
-![DOOM of Teyvat](https://github.com/bproai/doom-of-teyvat/blob/main/screenshot.png)
-
 ## Features
 - First-person exploration in a voxel world
 - Minecraft-style block building and destruction
-- Genshin Impact-inspired elemental combat system with 7 elements
+- Genshin Impact-inspired elemental combat system with multiple elements
 - DOOM-style weapons and fast-paced gameplay
-- Procedurally generated terrain with platforms and structures
-- Elemental reactions between different elements
+- Elemental projectiles with visual effects
+- Enemy AI that hunts the player
+- Health and energy system
 - Dynamic sound effects and background music
+- Element switching (Pyro, Hydro, Electro)
 
 ## How to Run
 1. Clone the repository
@@ -33,11 +33,25 @@ A parody game combining elements from Genshin Impact, Minecraft, and DOOM. Exper
 - **WASD**: Move (forward, left, backward, right)
 - **Mouse**: Look around
 - **Space**: Jump
-- **Left Click**: Mine blocks / Attack
-- **Right Click**: Place blocks
-- **1-7 Keys**: Switch between elements (visions)
-- **E**: Use elemental skill
-- **Q**: Use elemental burst
+- **Left Click**: Shoot elemental projectiles
+- **1-3 Keys**: Switch between elements (1: Pyro, 2: Hydro, 3: Electro)
+- **Right Click**: Place blocks (not yet implemented)
+
+## Combat System
+- Shoot elemental projectiles at enemies
+- Enemies will chase you and cause damage when close
+- Each element has different properties:
+  - **Pyro (Fire)**: High damage, medium range
+  - **Hydro (Water)**: Medium damage, long range
+  - **Electro (Lightning)**: Medium-high damage, very long range
+- Defeating enemies grants elemental energy
+
+## Tips for Playing
+- Keep moving to avoid enemies getting too close
+- Use your jump ability to reach higher ground
+- Switch elements based on the situation
+- Aim for headshots for maximum damage
+- Watch your health - when it reaches zero, it's game over!
 
 ## Technology
 - **Three.js**: 3D rendering engine
@@ -46,11 +60,11 @@ A parody game combining elements from Genshin Impact, Minecraft, and DOOM. Exper
 
 ## Development Roadmap
 - [ ] Enhanced terrain generation with biomes
-- [ ] Enemy AI and combat system
+- [ ] More enemy types with different behaviors
 - [ ] More block types and materials
+- [ ] Elemental reactions between different elements
 - [ ] In-game crafting system
 - [ ] Procedural dungeons (domains)
-- [ ] Complete elemental reaction system
 - [ ] Save/load game progress
 
 ## Credits
