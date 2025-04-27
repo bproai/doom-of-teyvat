@@ -10,14 +10,16 @@ export class InputController {
         right: false,
         jump: false,
         sprint: false,
-        crouch: false
+        crouch: false,
+        b: false // Added for test block placement
       };
       
       // Mouse interaction
       this.mouse = {
         leftButton: false,
         rightButton: false,
-        middleButton: false
+        middleButton: false,
+        lastRightClick: 0 // Added to track timing of right clicks
       };
       
       // Action keys
@@ -129,6 +131,9 @@ export class InputController {
         case 'ControlLeft':
           this.keys.crouch = pressed;
           break;
+        case 'KeyB':
+          this.keys.b = pressed;
+          break;
         
         // Action keys
         case 'KeyE':
@@ -174,6 +179,8 @@ export class InputController {
     }
     
     onMouseDown(event) {
+      event.preventDefault(); // Prevent default browser behavior
+      
       switch (event.button) {
         case 0: // Left button
           this.mouse.leftButton = true;
@@ -183,6 +190,8 @@ export class InputController {
           break;
         case 2: // Right button
           this.mouse.rightButton = true;
+          console.log("Right mouse button detected"); // Debugging
+          this.mouse.lastRightClick = Date.now();
           break;
       }
     }

@@ -72,7 +72,7 @@
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
     <div id="loading-screen">
         <div id="loading-text">LOADING DOOM OF TEYVAT</div>
         <div id="loading-bar-container">
@@ -134,5 +134,7 @@
         // Prevent context menu
         document.addEventListener('contextmenu', event => event.preventDefault());
     </script>
+
+    <script src="diagnostic.js"></script>
 </body>
 </html>

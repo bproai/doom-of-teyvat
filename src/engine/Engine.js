@@ -5,9 +5,14 @@ import { Renderer } from './Renderer.js';
 import { InputController } from './InputController.js';
 import { SoundManager } from './SoundManager.js';
 import { UIManager } from './UIManager.js';
+import { Player } from './game/Player.js';
+
 
 export class Engine {
   constructor() {
+    // Make this instance globally accessible for diagnostics
+    window.engine = this;
+    
     this.entities = [];
     this.lastTimestamp = 0;
     this.isRunning = false;
@@ -18,6 +23,8 @@ export class Engine {
     this.input = new InputController();
     this.soundManager = new SoundManager();
     this.uiManager = new UIManager();
+
+    this.player = new Player(); 
     
     // Player movement settings
     this.playerSettings = {
@@ -51,6 +58,29 @@ export class Engine {
     this.gameLoop = this.gameLoop.bind(this);
     this.handleInput = this.handleInput.bind(this);
     this.updatePlayer = this.updatePlayer.bind(this);
+    
+    // Listen for diagnostic commands
+    document.addEventListener('placeTestBlock', () => {
+      this.testPlaceBlockDirectly();
+    });
+    
+    // Set up direct mouse handling
+    document.addEventListener('mousedown', (event) => {
+      if (event.button === 2) { // Right mouse button
+        console.log("Right click detected directly");
+        if (document.pointerLockElement) { // Only if pointer is locked (game is active)
+          this.handleRightClick();
+        }
+      }
+    });
+    
+    // Listen for B key to test block placement
+    document.addEventListener('keydown', (event) => {
+      if (event.code === 'KeyB') {
+        console.log("B key pressed directly");
+        this.testPlaceBlockDirectly();
+      }
+    });
   }
   
   initialize() {
@@ -175,7 +205,16 @@ export class Engine {
     }
     
     if (this.input.mouse.rightButton) {
+      console.log("Right click detected in handleInput");
       this.handleRightClick();
+      this.input.mouse.rightButton = false;
+    }
+    
+    // Test block placement with B key
+    if (this.input.keys.b) {
+      console.log("B key detected in handleInput");
+      this.input.keys.b = false; // Reset to avoid multiple placements
+      this.testPlaceBlockDirectly();
     }
     
     // Handle action keys
@@ -290,24 +329,95 @@ export class Engine {
   }
   
   handleRightClick() {
-    // Place block/use item action
-    const hitResult = this.renderer.castRay();
+    console.log("handleRightClick called");
+    console.log("Pointer locked:", document.pointerLockElement !== null);
+
+    // Use the renderer's raycast to get the hit information
+    const raycastResult = this.renderer.castRay();
+    console.log("Raycast result:", raycastResult);  
     
-    if (hitResult && hitResult.distance < 5) {
-      // Calculate position for new block based on face normal
-      const blockPosition = {
-        x: Math.floor(hitResult.position.x + hitResult.normal.x * 0.5),
-        y: Math.floor(hitResult.position.y + hitResult.normal.y * 0.5),
-        z: Math.floor(hitResult.position.z + hitResult.normal.z * 0.5)
-      };
+    if (!raycastResult) {
+      console.log("No raycast result");
+      return;
+    }
+    
+    console.log("Raycast hit at distance:", raycastResult.distance);
+    
+    if (raycastResult.distance < 5) {
+      // Get the normal vector from the raycast
+      const normal = raycastResult.normal || new THREE.Vector3(0, 1, 0);
       
-      // Place a block (use appropriate type based on selected block)
-      const blockTypes = ['dirt', 'stone', 'grass', 'wood', 'leaves'];
-      const selectedType = blockTypes[this.gameState.selectedBlock % blockTypes.length];
+      // Compute the position to place the block by adding the normal
+      const blockX = Math.floor(raycastResult.position.x + normal.x * 0.5);
+      const blockY = Math.floor(raycastResult.position.y + normal.y * 0.5);
+      const blockZ = Math.floor(raycastResult.position.z + normal.z * 0.5);
       
-      console.log(`Placing block of type: ${selectedType}`);
-      this.renderer.addVoxelBlock(blockPosition.x, blockPosition.y, blockPosition.z, selectedType);
+      console.log(`Placing block at: ${blockX}, ${blockY}, ${blockZ}`);
+      
+      // Explicitly check for collision with player
+      const playerPos = this.playerState.position;
+      const playerMinX = Math.floor(playerPos.x - this.playerSettings.playerWidth/2);
+      const playerMaxX = Math.floor(playerPos.x + this.playerSettings.playerWidth/2);
+      const playerMinY = Math.floor(playerPos.y - this.playerSettings.eyeHeight);
+      const playerMaxY = Math.floor(playerPos.y);
+      const playerMinZ = Math.floor(playerPos.z - this.playerSettings.playerWidth/2);
+      const playerMaxZ = Math.floor(playerPos.z + this.playerSettings.playerWidth/2);
+      
+      // Don't place block if it would overlap with the player
+      if (blockX >= playerMinX && blockX <= playerMaxX &&
+          blockY >= playerMinY && blockY <= playerMaxY &&
+          blockZ >= playerMinZ && blockZ <= playerMaxZ) {
+        console.log("Can't place block - would overlap with player");
+        return;
+      }
+      
+      // Get block type and try to place
+      const blockType = this.player.selectedBlockType || 'dirt';
+      console.log(`Using block type: ${blockType}`);
+      
+      // Try to place the block
+      if (this.player.placeBlock()) {
+        const newBlock = this.renderer.addVoxelBlock(blockX, blockY, blockZ, blockType);
+        console.log("Block placed successfully:", newBlock);
+        
+        // Play sound effect
+        this.soundManager.playSound('blockPlace');
+      } else {
+        console.log("No more blocks of type", blockType, "available");
+      }
+    } else {
+      console.log("Raycast hit too far away");
+    }
+  }
+  
+  // Guaranteed to work direct block placement for testing
+  testPlaceBlockDirectly() {
+    console.log("DIRECT TEST: Placing block directly");
+    
+    // Get player position
+    const pos = this.renderer.getPlayerPosition();
+    console.log("Player position:", pos);
+    
+    // Place block right below the player
+    const blockX = Math.floor(pos.x);
+    const blockY = Math.floor(pos.y) - 2; // Place below player
+    const blockZ = Math.floor(pos.z);
+    
+    console.log(`Placing block at ${blockX}, ${blockY}, ${blockZ}`);
+    
+    // Always use dirt
+    const blockType = 'dirt';
+    
+    // Create the block directly (skip all checks)
+    const newBlock = this.renderer.addVoxelBlock(blockX, blockY, blockZ, blockType);
+    
+    if (newBlock) {
+      console.log("Block placement successful!");
       this.soundManager.playSound('blockPlace');
+      return true;
+    } else {
+      console.log("Block placement failed");
+      return false;
     }
   }
   
@@ -415,3 +525,16 @@ export class Engine {
     }
   }
 }
+
+// Test function to directly place a block
+setTimeout(() => {
+  console.log("Running direct block placement test in 5 seconds...");
+  setTimeout(() => {
+    if (window.engine) {
+      console.log("Automatic test: Attempting direct block placement");
+      window.engine.testPlaceBlockDirectly();
+    } else {
+      console.error("Engine not found in global scope!");
+    }
+  }, 5000);
+}, 100);

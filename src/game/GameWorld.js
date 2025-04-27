@@ -676,4 +676,29 @@ export class GameWorld {
     
     return chunksData;
   }
+
+  addBlock(position, blockType) {
+    // Create or get the correct chunk based on the position
+    const chunkKey = `${Math.floor(position.x / this.chunkSize)},${Math.floor(position.y / this.chunkSize)},${Math.floor(position.z / this.chunkSize)}`;
+    let chunk = this.chunks[chunkKey];
+    if (!chunk) {
+      chunk = this.generateChunk(Math.floor(position.x / this.chunkSize), Math.floor(position.y / this.chunkSize), Math.floor(position.z / this.chunkSize));
+    }
+    
+    // Convert the world position to local chunk coordinates
+    const localX = Math.abs(position.x % this.chunkSize);
+    const localY = Math.abs(position.y % this.chunkSize);
+    const localZ = Math.abs(position.z % this.chunkSize);
+    
+    // Place the block in the chunk's block array
+    chunk.blocks[localX][localY][localZ] = blockType;
+    
+    // Optionally, update the renderer to show the new block
+    if (this.renderer) {
+      this.renderer.addVoxelBlock(position.x, position.y, position.z, blockType);
+    }
+    
+    console.log(`Placed block '${blockType}' at (${position.x}, ${position.y}, ${position.z})`);
+  }  
+
 }

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block Placement Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+    <div id="info">
+        <h3>Block Placement Test</h3>
+        <p>Left-click: Remove block</p>
+        <p>Right-click: Place block</p>
+        <p>Keys 1-5: Change block type</p>
+        <p id="status">Status: Ready</p>
+        <p id="block-type">Block Type: dirt</p>
+    </div>
+
+    <script>
+        // Simple block placement test
+        let scene, camera, renderer, raycaster;
+        let blocks = [];
+        let mouse = new THREE.Vector2();
+        let blockType = 'dirt';
+        let blockTypes = ['dirt', 'grass', 'stone', 'wood', 'leaves'];
+        let blockColors = {
+            'dirt': 0x8B4513,
+            'grass': 0x228B22,
+            'stone': 0x808080,
+            'wood': 0x8B5A2B,
+            'leaves': 0x006400
+        };
+
+        // Prevent context menu globally
+        document.addEventListener('contextmenu', function(event) {
+            event.preventDefault();
+            return false;
+        });
+
+        // Initialize Three.js scene
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 10);
+
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Create raycaster for block selection
+            raycaster = new THREE.Raycaster();
+
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+
+            // Create ground plane
+            const groundGeometry = new THREE.PlaneGeometry(20, 20);
+            const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.5;
+            ground.userData.type = 'ground';
+            scene.add(ground);
+
+            // Add some initial blocks
+            addBlock(0, 0, 0, 'dirt');
+            addBlock(1, 0, 0, 'grass');
+            addBlock(-1, 0, 0, 'stone');
+            addBlock(0, 1, 0, 'wood');
+            addBlock(0, 0, 1, 'leaves');
+
+            // Add orbit controls
+            const OrbitControls = createOrbitControls();
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Add event listeners
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mousedown', onMouseDown);
+            document.addEventListener('keydown', onKeyDown);
+
+            // Start animation loop
+            animate();
+
+            // Log success
+            document.getElementById('status').textContent = 'Status: Initialized successfully';
+        }
+
+        function createOrbitControls() {
+            // Simple OrbitControls implementation for the test
+            return function(camera, domElement) {
+                this.domElement = domElement;
+                this.enableDamping = false;
+                this.dampingFactor = 0.1;
+                this.enabled = true;
+
+                let rotateStart = new THREE.Vector2();
+                let rotateEnd = new THREE.Vector2();
+                let rotateDelta = new THREE.Vector2();
+                let panStart = new THREE.Vector2();
+                let panEnd = new THREE.Vector2();
+                let panDelta = new THREE.Vector2();
+                let dollyStart = new THREE.Vector2();
+                let dollyEnd = new THREE.Vector2();
+                let dollyDelta = new THREE.Vector2();
+
+                let spherical = new THREE.Spherical();
+                let scale = 1;
+                let panOffset = new THREE.Vector3();
+                let zoomChanged = false;
+
+                this.update = function() {
+                    return true;
+                };
+
+                const onMouseDown = (event) => {
+                    if (!this.enabled) return;
+                    event.preventDefault();
+
+                    switch (event.button) {
+                        case 0: // left mouse button - rotate
+                            rotateStart.set(event.clientX, event.clientY);
+                            domElement.addEventListener('mousemove', onMouseMoveRotate, false);
+                            domElement.addEventListener('mouseup', onMouseUp, false);
+                            break;
+                        case 1: // middle mouse button - pan
+                            panStart.set(event.clientX, event.clientY);
+                            domElement.addEventListener('mousemove', onMouseMovePan, false);
+                            domElement.addEventListener('mouseup', onMouseUp, false);
+                            break;
+                        case 2: // right mouse button - handle in main onMouseDown
+                            break;
+                    }
+                };
+
+                const onMouseMoveRotate = (event) => {
+                    rotateEnd.set(event.clientX, event.clientY);
+                    rotateDelta.subVectors(rotateEnd, rotateStart);
+
+                    // Rotate camera
+                    const element = domElement === document ? domElement.body : domElement;
+                    camera.position.y += rotateDelta.y * 0.01;
+                    camera.lookAt(0, 0, 0);
+
+                    rotateStart.copy(rotateEnd);
+                };
+
+                const onMouseMovePan = (event) => {
+                    panEnd.set(event.clientX, event.clientY);
+                    panDelta.subVectors(panEnd, panStart);
+
+                    // Pan camera
+                    camera.position.x -= panDelta.x * 0.01;
+                    camera.position.z -= panDelta.y * 0.01;
+                    camera.lookAt(0, 0, 0);
+
+                    panStart.copy(panEnd);
+                };
+
+                const onMouseUp = () => {
+                    domElement.removeEventListener('mousemove', onMouseMoveRotate, false);
+                    domElement.removeEventListener('mousemove', onMouseMovePan, false);
+                    domElement.removeEventListener('mouseup', onMouseUp, false);
+                };
+
+                domElement.addEventListener('mousedown', onMouseDown, false);
+                domElement.addEventListener('wheel', (event) => {
+                    if (!this.enabled) return;
+                    event.preventDefault();
+
+                    // Zoom camera
+                    camera.position.z += event.deltaY * 0.01;
+                }, false);
+
+                return this;
+            };
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onMouseMove(event) {
+            // Update mouse position
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        function onMouseDown(event) {
+            event.preventDefault();
+            
+            // Cast ray from camera
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children);
+            
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+                
+                if (event.button === 0) { // Left click - remove block
+                    // Only remove if it's a block (not ground)
+                    if (hit.object.userData.type !== 'ground') {
+                        scene.remove(hit.object);
+                        document.getElementById('status').textContent = `Status: Removed ${hit.object.userData.type} block`;
+                    }
+                } else if (event.button === 2) { // Right click - place block
+                    // Calculate position for new block based on face normal
+                    const position = hit.point.clone().add(hit.face.normal.clone().multiplyScalar(0.5));
+                    const x = Math.floor(position.x + 0.5);
+                    const y = Math.floor(position.y + 0.5);
+                    const z = Math.floor(position.z + 0.5);
+                    
+                    // Create new block
+                    addBlock(x, y, z, blockType);
+                    document.getElementById('status').textContent = `Status: Placed ${blockType} block at (${x}, ${y}, ${z})`;
+                }
+            }
+        }
+
+        function onKeyDown(event) {
+            // Change block type with number keys
+            if (event.key >= '1' && event.key <= '5') {
+                const index = parseInt(event.key) - 1;
+                blockType = blockTypes[index];
+                document.getElementById('block-type').textContent = `Block Type: ${blockType}`;
+                document.getElementById('status').textContent = `Status: Selected ${blockType} block`;
+            }
+        }
+
+        function addBlock(x, y, z, type) {
+            // Create block geometry
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshStandardMaterial({ color: blockColors[type] });
+            const block = new THREE.Mesh(geometry, material);
+            
+            // Position block
+            block.position.set(x, y, z);
+            
+            // Store block type
+            block.userData.type = type;
+            
+            // Add to scene
+            scene.add(block);
+            blocks.push(block);
+            
+            return block;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        // Start the application
+        init();
+    </script>
+</body>
+</html>

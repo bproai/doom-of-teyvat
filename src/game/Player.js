@@ -2,6 +2,9 @@
 
 export class Player {
   constructor() {
+    // Set default selected block type
+    this.selectedBlockType = 'dirt';
+    
     // Basic player properties
     this.position = { x: 0, y: 2, z: 0 };
     this.velocity = { x: 0, y: 0, z: 0 };
@@ -38,7 +41,7 @@ export class Player {
     this.attackCooldown = 0;
     this.attackRate = 0.5; // Attacks per second
     
-    // Inventory
+    // Ensure inventory is initialized with blocks
     this.inventory = {
       blocks: {
         dirt: 64,
@@ -56,7 +59,6 @@ export class Player {
     // Current equipment
     this.currentVision = null;
     this.currentWeapon = null;
-    this.selectedBlockType = 'dirt';
     this.hotbarIndex = 0;
     
     // Elemental abilities cooldowns
@@ -66,6 +68,10 @@ export class Player {
     this.burstCooldownMax = 15; // seconds
     this.elementalEnergy = 0;
     this.elementalEnergyMax = 100;
+    
+    // Log inventory state to verify it's working
+    console.log("Player initialized with inventory:", this.inventory);
+    console.log("Selected block type:", this.selectedBlockType);
   }
   
   update(deltaTime) {
@@ -232,12 +238,36 @@ export class Player {
   }
   
   placeBlock() {
-    if (this.inventory.blocks[this.selectedBlockType] > 0) {
-      // Actual block placement is handled by the game world
-      this.inventory.blocks[this.selectedBlockType]--;
-      return true;
+    console.log("placeBlock called, inventory:", this.inventory.blocks);
+    console.log("Selected block type:", this.selectedBlockType);
+    
+    if (!this.selectedBlockType) {
+      console.log("No block type selected, defaulting to dirt");
+      this.selectedBlockType = 'dirt';
     }
-    return false;
+    
+    if (!this.inventory.blocks) {
+      console.log("Inventory blocks not initialized!");
+      // Initialize if missing
+      this.inventory.blocks = {
+        dirt: 64,
+        stone: 64,
+        grass: 64,
+        wood: 32,
+        leaves: 32
+      };
+    }
+    
+    if (this.inventory.blocks[this.selectedBlockType] && 
+        this.inventory.blocks[this.selectedBlockType] > 0) {
+      // Decrement the block count
+      this.inventory.blocks[this.selectedBlockType]--;
+      console.log(`Placed ${this.selectedBlockType}, remaining: ${this.inventory.blocks[this.selectedBlockType]}`);
+      return true;
+    } else {
+      console.log(`No more ${this.selectedBlockType} blocks available`);
+      return false;
+    }
   }
   
   mineBlock(blockType) {
